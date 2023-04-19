@@ -102,7 +102,7 @@ download the http_logs files and extract them:
 	https://rally-tracks.elastic.co/http_logs/documents-241998.json.bz2
 */
 
-func merges() {
+func Merges() {
 	jsonFile := []string{
 		"documents-181998.json",
 		"documents-191998.json",

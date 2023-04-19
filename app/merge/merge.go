@@ -16,10 +16,11 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/lijieac/rallyForOg/lib/logs"
 )
 
 func main() {
 	fmt.Println("Begin to merge file...")
-	logs.writeLogsToOpenGemini()
+	logs.Merges()
 }

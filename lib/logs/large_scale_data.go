@@ -132,7 +132,7 @@ func createMeasurementForLogs(con *client.Client) error {
 	return nil
 }
 
-func writeLogsToOpenGemini() {
+func WriteLogsToOpenGemini() {
 	logs := readDataFromFile("../resource/documents-180000000.json", maxCount)
 	fmt.Println("read data successfully, count:", len(logs))
 	con := NewOpenGeminiClient("http://127.0.0.1:8086")
