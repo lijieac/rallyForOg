@@ -60,7 +60,7 @@ func readDataFromFile(fileName string, maxCount int) []Log {
 				fmt.Println("read file EOF!")
 				break
 			}
-			fmt.Println(err)
+			log.Fatal(err)
 		}
 
 		var log Log
@@ -112,7 +112,7 @@ func createMeasurementForLogs(con *client.Client) error {
 	}
 
 	q = client.Query{
-		Command:  "create measurement logTable(clientip sring tags, request string field, index idx1 request type text)",
+		Command:  "create measurement logTable(clientip string tag, request string field, index idx1 request type text)",
 		Database: "logdb",
 	}
 
@@ -133,7 +133,7 @@ func createMeasurementForLogs(con *client.Client) error {
 }
 
 func WriteLogsToOpenGemini() {
-	logs := readDataFromFile("../resource/documents-180000000.json", maxCount)
+	logs := readDataFromFile("../../resource/http_logs/documents-180000000.json", maxCount)
 	fmt.Println("read data successfully, count:", len(logs))
 	con := NewOpenGeminiClient("http://127.0.0.1:8086")
 	err := createMeasurementForLogs(con)
@@ -153,9 +153,9 @@ func WriteLogsToOpenGemini() {
 					"clientip": logs[k].Clientip,
 				},
 				Fields: map[string]interface{}{
-					"logs":   logs[k].Request,
-					"status": logs[k].Status,
-					"size":   logs[k].Size,
+					"request": logs[k].Request,
+					"status":  logs[k].Status,
+					"size":    logs[k].Size,
 				},
 				Time:      time.Unix(0, logs[k].Timestamp),
 				Precision: "ns",

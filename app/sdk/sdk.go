@@ -21,6 +21,6 @@ import (
 )
 
 func main() {
-	fmt.Println("Begin to merge file...")
+	fmt.Println("Begin to write logs to openGemini...")
 	logs.WriteLogsToOpenGemini()
 }
