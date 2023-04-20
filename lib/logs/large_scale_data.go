@@ -133,7 +133,7 @@ func createMeasurementForLogs(con *client.Client) error {
 
 func WriteLogsToOpenGemini(file, rawURL string, count int) {
 	fmt.Println("Begin to write logs to openGemini...")
-	logs := readDataFromFile("../../resource/http_logs/"+file, count)
+	logs := readDataFromFile(file, count)
 	fmt.Println("read data successfully, count:", len(logs))
 	con := NewOpenGeminiClient(rawURL)
 	err := createMeasurementForLogs(con)

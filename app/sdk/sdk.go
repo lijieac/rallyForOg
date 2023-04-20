@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/lijieac/rallyForOg/lib/logs"
 )
@@ -24,7 +25,7 @@ import (
 func usage() {
 	fmt.Println("usage:")
 	fmt.Println("	sdk type")
-	fmt.Println("type = [50w, 5000w, 18000w]")
+	fmt.Println("type = [500000, 50000000, 180000000...]")
 }
 
 func main() {
@@ -33,14 +34,13 @@ func main() {
 		return
 	}
 
-	switch os.Args[1] {
-	case "50w":
-		logs.WriteLogsToOpenGemini("documents-500000.json", "http://127.0.0.1:8086", 500000)
-	case "5000w":
-		logs.WriteLogsToOpenGemini("documents-50000000.json", "http://127.0.0.1:8086", 50000000)
-	case "18000w":
-		logs.WriteLogsToOpenGemini("documents-180000000.json", "http://127.0.0.1:8086", 180000000)
-	default:
-		usage()
+	fileName := "documents-" + os.Args[1] + ".json"
+	filePath := "../../resource/http_logs/" + fileName
+	_, err := os.Stat(filePath)
+	if err != nil {
+		fmt.Println("the file [", fileName, "] is not existed. err:", err)
+		return
 	}
+	count, _ := strconv.Atoi(os.Args[1])
+	logs.WriteLogsToOpenGemini(filePath, "http://127.0.0.1:8086", count)
 }
