@@ -47,11 +47,11 @@ func writeJsonToFile(outFileName string, timestamp int64, logs []Log) int64 {
 	return timestamp
 }
 
-func readJsonAndMerge(inFileName string, outFileName string, timestamp int64) int64 {
+func readJsonAndMerge(inFileName string, outFileName string, timestamp int64, count uint32, maxMergeCount uint32) (int64, uint32) {
 	fp, err := os.Open(inFileName)
 	if err != nil {
 		fmt.Println("open input path failed, err:", err)
-		return 0
+		return timestamp, count
 	}
 	defer fp.Close()
 
@@ -77,6 +77,11 @@ func readJsonAndMerge(inFileName string, outFileName string, timestamp int64) in
 		}
 		logs = append(logs, log)
 
+		count++
+		if count >= maxMergeCount {
+			break
+		}
+
 		// write data to output file.
 		i++
 		if i >= MaxBuf {
@@ -87,7 +92,7 @@ func readJsonAndMerge(inFileName string, outFileName string, timestamp int64) in
 			i = 0
 		}
 	}
-	return writeJsonToFile(outFileName, timestamp, logs)
+	return writeJsonToFile(outFileName, timestamp, logs), count
 }
 
 /*
@@ -102,7 +107,7 @@ download the http_logs files and extract them:
 	https://rally-tracks.elastic.co/http_logs/documents-241998.json.bz2
 */
 
-func Merges() {
+func Merges(maxMergeCount uint32, outFile string) {
 	jsonFile := []string{
 		"documents-181998.json",
 		"documents-191998.json",
@@ -112,11 +117,14 @@ func Merges() {
 		"documents-231998.json",
 		"documents-241998.json",
 	}
-	outFile := "documents-180000000.json"
 
 	var timestamp int64 = 800000000
+	var count uint32 = 0
 	for i := 0; i < len(jsonFile); i++ {
 		fmt.Println("begin to merge file:", jsonFile[i])
-		timestamp = readJsonAndMerge(jsonFile[i], outFile, timestamp)
+		timestamp, count = readJsonAndMerge(jsonFile[i], outFile, timestamp, count, maxMergeCount)
+		if count >= maxMergeCount {
+			break
+		}
 	}
 }

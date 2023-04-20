@@ -28,7 +28,6 @@ import (
 )
 
 const (
-	maxCount    int = 180000000
 	printCount  int = 1000000
 	batchPoints int = 100
 	maxRetry    int = 5
@@ -132,10 +131,11 @@ func createMeasurementForLogs(con *client.Client) error {
 	return nil
 }
 
-func WriteLogsToOpenGemini() {
-	logs := readDataFromFile("../../resource/http_logs/documents-180000000.json", maxCount)
+func WriteLogsToOpenGemini(file, rawURL string, count int) {
+	fmt.Println("Begin to write logs to openGemini...")
+	logs := readDataFromFile("../../resource/http_logs/"+file, count)
 	fmt.Println("read data successfully, count:", len(logs))
-	con := NewOpenGeminiClient("http://127.0.0.1:8086")
+	con := NewOpenGeminiClient(rawURL)
 	err := createMeasurementForLogs(con)
 	if err != nil {
 		log.Fatal(err)

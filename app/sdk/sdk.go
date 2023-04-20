@@ -16,11 +16,31 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/lijieac/rallyForOg/lib/logs"
 )
 
+func usage() {
+	fmt.Println("usage:")
+	fmt.Println("	sdk type")
+	fmt.Println("type = [50w, 5000w, 18000w]")
+}
+
 func main() {
-	fmt.Println("Begin to write logs to openGemini...")
-	logs.WriteLogsToOpenGemini()
+	if len(os.Args) != 2 {
+		usage()
+		return
+	}
+
+	switch os.Args[1] {
+	case "50w":
+		logs.WriteLogsToOpenGemini("documents-500000.json", "http://127.0.0.1:8086", 500000)
+	case "5000w":
+		logs.WriteLogsToOpenGemini("documents-50000000.json", "http://127.0.0.1:8086", 50000000)
+	case "18000w":
+		logs.WriteLogsToOpenGemini("documents-180000000.json", "http://127.0.0.1:8086", 180000000)
+	default:
+		usage()
+	}
 }

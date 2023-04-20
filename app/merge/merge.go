@@ -16,11 +16,21 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 
 	"github.com/lijieac/rallyForOg/lib/logs"
 )
 
 func main() {
-	fmt.Println("Begin to merge file...")
-	logs.Merges()
+	if len(os.Args) != 2 {
+		fmt.Println("usage:")
+		fmt.Println("	merge count")
+		fmt.Println("	eg.. merge 500000")
+		return
+	}
+
+	count, _ := strconv.Atoi(os.Args[1])
+	fmt.Println("Begin to merge file, count: ", count)
+	logs.Merges(uint32(count), "documents-"+os.Args[1]+".json")
 }
