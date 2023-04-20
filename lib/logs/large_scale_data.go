@@ -170,9 +170,9 @@ func WriteLogsToOpenGemini(file, rawURL string, count int) {
 				cur := time.Now().UnixMicro()
 				ti := int((cur - pre) / 1000000)
 				if ti != 0 {
-					fmt.Println("current time:", time.Now(), "write(poingts/s): ", printCount/ti)
+					fmt.Println("current time:", time.Now(), "count", i, "write(poingts/s): ", printCount/ti)
 				} else {
-					fmt.Println("current time:", time.Now(), "write(poingts): ", i)
+					fmt.Println("current time:", time.Now(), "count", i)
 				}
 				pre = cur
 			}
