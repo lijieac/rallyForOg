@@ -143,37 +143,39 @@ func WriteLogsToOpenGemini(file, rawURL string, count int) {
 
 	start := time.Now().UnixMicro()
 	pre := time.Now().UnixMicro()
-	for i := 0; i < len(logs); {
+	i := 0
+	for i < len(logs) {
 		points := make([]client.Point, 0, batchPoints)
-		k := i
-		for ; k < i+100 && k < len(logs); k++ {
+		curMax := i + batchPoints
+		for i < curMax {
 			point := client.Point{
 				Measurement: "logTable",
 				Tags: map[string]string{
-					"clientip": logs[k].Clientip,
+					"clientip": logs[i].Clientip,
 				},
 				Fields: map[string]interface{}{
-					"request": logs[k].Request,
-					"status":  logs[k].Status,
-					"size":    logs[k].Size,
+					"request": logs[i].Request,
+					"status":  logs[i].Status,
+					"size":    logs[i].Size,
 				},
-				Time:      time.Unix(0, logs[k].Timestamp),
+				Time:      time.Unix(0, logs[i].Timestamp),
 				Precision: "ns",
 			}
 			points = append(points, point)
 
-			if k%printCount == 0 {
+			if (i != 0) && (i%printCount) == 0 {
 				cur := time.Now().UnixMicro()
-				ti := int(cur - pre/1000000)
+				ti := int((cur - pre) / 1000000)
 				if ti != 0 {
-					fmt.Println("current time：", time.Now(), "write(/s): ", printCount/ti)
+					fmt.Println("current time：", time.Now(), "write(poingts/s): ", printCount/ti)
 				} else {
-					fmt.Println("current time：", time.Now(), "write(w): ", k)
+					fmt.Println("current time：", time.Now(), "write(poingts): ", i)
 				}
 				pre = cur
 			}
+			i++
 		}
-		i = i + k
+
 		bps := client.BatchPoints{
 			Points:   points,
 			Database: "logdb",
@@ -188,6 +190,5 @@ func WriteLogsToOpenGemini(file, rawURL string, count int) {
 	}
 
 	end := time.Now().UnixMicro()
-	fmt.Println("sdk push logs cost time:")
-	fmt.Println(float64(end-start) / 1000)
+	fmt.Println("sdk push", i, "logs cost time: ", float64(end-start)/1000)
 }
