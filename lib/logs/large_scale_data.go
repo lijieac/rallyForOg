@@ -65,8 +65,8 @@ func readDataFromFile(fileName string, maxCount int) []Log {
 		var log Log
 		err = json.Unmarshal(data, &log)
 		if err != nil {
-			fmt.Println(i)
-			panic("Unmarshal failed.")
+			fmt.Println("Unmarshal failed.", i, log)
+			continue
 		}
 		logs = append(logs, log)
 
