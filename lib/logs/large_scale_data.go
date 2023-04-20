@@ -147,6 +147,9 @@ func WriteLogsToOpenGemini(file, rawURL string, count int) {
 	for i < len(logs) {
 		points := make([]client.Point, 0, batchPoints)
 		curMax := i + batchPoints
+		if curMax >= len(logs) {
+			curMax = len(logs)
+		}
 		for i < curMax {
 			point := client.Point{
 				Measurement: "logTable",
