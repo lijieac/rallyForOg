@@ -25,14 +25,16 @@ import (
 
 func usage() {
 	fmt.Println("usage:")
-	fmt.Println("	sdk -c 500000 [-i index/noindex], default ")
+	fmt.Println("	sdk -c 500000 [-i index/noindex], default is \"index\"")
 }
 
 func main() {
 	var dataCnt int
 	var index string
-	flag.StringVar(&index, "i", "noindex", "Specify whether an index needs to be established")
+	flag.StringVar(&index, "i", "index", "Specify whether an index needs to be established")
 	flag.IntVar(&dataCnt, "c", 0, "Specify the amount of data")
+	flag.Parse()
+
 	if dataCnt <= 0 || (index != "index" && index != "noindex") {
 		usage()
 		return
