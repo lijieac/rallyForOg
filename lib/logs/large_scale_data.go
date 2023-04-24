@@ -112,7 +112,7 @@ func createMeasurementForLogs(con *client.Client, noIndex bool) error {
 
 	if noIndex {
 		q = client.Query{
-			Command:  "create measurement logTable(clientip string tag, request string field,)",
+			Command:  "create measurement logTable",
 			Database: "logdb",
 		}
 	} else {
