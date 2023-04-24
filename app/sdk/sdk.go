@@ -29,24 +29,25 @@ func usage() {
 }
 
 func main() {
-	var dataCnt int
+	var dataCnt string
 	var index string
 	flag.StringVar(&index, "i", "index", "Specify whether an index needs to be established")
-	flag.IntVar(&dataCnt, "c", 0, "Specify the amount of data")
+	flag.StringVar(&dataCnt, "c", "500000", "Specify the amount of data")
 	flag.Parse()
 
-	if dataCnt <= 0 || (index != "index" && index != "noindex") {
+	count, _ := strconv.Atoi(dataCnt)
+	if count <= 0 || (index != "index" && index != "noindex") {
 		usage()
 		return
 	}
 
-	fileName := "documents-" + os.Args[1] + ".json"
+	fileName := "documents-" + dataCnt + ".json"
 	filePath := "../../resource/http_logs/" + fileName
 	_, err := os.Stat(filePath)
 	if err != nil {
 		fmt.Println("the file [", fileName, "] is not existed. err:", err)
 		return
 	}
-	count, _ := strconv.Atoi(os.Args[1])
+
 	logs.WriteLogsToOpenGemini(filePath, "http://127.0.0.1:8086", count, index == "noindex")
 }
