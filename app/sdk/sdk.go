@@ -15,6 +15,7 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -24,12 +25,15 @@ import (
 
 func usage() {
 	fmt.Println("usage:")
-	fmt.Println("	sdk type")
-	fmt.Println("type = [500000, 50000000, 180000000...]")
+	fmt.Println("	sdk -c 500000 [-i index/noindex], default ")
 }
 
 func main() {
-	if len(os.Args) != 2 {
+	var dataCnt int
+	var index string
+	flag.StringVar(&index, "i", "noindex", "Specify whether an index needs to be established")
+	flag.IntVar(&dataCnt, "c", 0, "Specify the amount of data")
+	if dataCnt <= 0 || (index != "index" && index != "noindex") {
 		usage()
 		return
 	}
@@ -42,5 +46,5 @@ func main() {
 		return
 	}
 	count, _ := strconv.Atoi(os.Args[1])
-	logs.WriteLogsToOpenGemini(filePath, "http://127.0.0.1:8086", count)
+	logs.WriteLogsToOpenGemini(filePath, "http://127.0.0.1:8086", count, index == "noindex")
 }

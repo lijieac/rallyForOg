@@ -95,7 +95,7 @@ func NewOpenGeminiClient(rawURL string) *client.Client {
 	return con
 }
 
-func createMeasurementForLogs(con *client.Client) error {
+func createMeasurementForLogs(con *client.Client, noIndex bool) error {
 	q := client.Query{
 		Command: "drop database logdb; create database logdb",
 	}
@@ -110,9 +110,16 @@ func createMeasurementForLogs(con *client.Client) error {
 		return r.Err
 	}
 
-	q = client.Query{
-		Command:  "create measurement logTable(clientip string tag, request string field, index idx1 request type text)",
-		Database: "logdb",
+	if noIndex {
+		q = client.Query{
+			Command:  "create measurement logTable(clientip string tag, request string field,)",
+			Database: "logdb",
+		}
+	} else {
+		q = client.Query{
+			Command:  "create measurement logTable(clientip string tag, request string field, index idx1 request type text)",
+			Database: "logdb",
+		}
 	}
 
 	r, err = con.Query(q)
@@ -131,12 +138,12 @@ func createMeasurementForLogs(con *client.Client) error {
 	return nil
 }
 
-func WriteLogsToOpenGemini(file, rawURL string, count int) {
+func WriteLogsToOpenGemini(file, rawURL string, count int, noIndex bool) {
 	fmt.Println("Begin to write logs to openGemini...")
 	logs := readDataFromFile(file, count)
 	fmt.Println("read data successfully, count:", len(logs))
 	con := NewOpenGeminiClient(rawURL)
-	err := createMeasurementForLogs(con)
+	err := createMeasurementForLogs(con, noIndex)
 	if err != nil {
 		log.Fatal(err)
 	}
