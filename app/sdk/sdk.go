@@ -32,7 +32,7 @@ func main() {
 	var dataCnt string
 	var index string
 	flag.StringVar(&index, "i", "index", "Specify whether an index needs to be established")
-	flag.StringVar(&dataCnt, "c", "500000", "Specify the amount of data")
+	flag.StringVar(&dataCnt, "c", "0", "Specify the amount of data")
 	flag.Parse()
 
 	count, _ := strconv.Atoi(dataCnt)
