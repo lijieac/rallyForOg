@@ -40,7 +40,7 @@ func writeJsonToFile(outFileName string, timestamp int64, logs []Log) int64 {
 			timestamp, logs[i].Clientip, logs[i].Request, logs[i].Status, logs[i].Size)
 		write.WriteString(log)
 		write.WriteString("\n")
-		timestamp = timestamp + 10
+		timestamp = timestamp + 100000000 // 10 Docs per 1 second
 	}
 
 	write.Flush()
@@ -126,5 +126,85 @@ func Merges(maxMergeCount uint32, outFile string) {
 		if count >= maxMergeCount {
 			break
 		}
+	}
+}
+
+func readJsonAndTransfer(inFileName string, outPath string, timestamp int64) (int64, int) {
+	fp, err := os.Open(inFileName)
+	if err != nil {
+		fmt.Println("open input path failed, err:", err)
+		return timestamp, 0
+	}
+	defer fp.Close()
+
+	outFileName := outPath + "/" + inFileName
+	count := 0
+	i := 0
+	j := 0
+	buff := bufio.NewReader(fp)
+	logs := make([]Log, 0, MaxBuf)
+	for {
+		// read data form json file
+		data, _, err := buff.ReadLine()
+		if err != nil {
+			if err == io.EOF {
+				fmt.Println("read file EOF!")
+				break
+			}
+			fmt.Println(err)
+		}
+		var log Log
+		err = json.Unmarshal(data, &log)
+		if err != nil {
+			fmt.Println(i)
+			panic("Unmarshal failed.")
+		}
+		logs = append(logs, log)
+
+		count++
+		// write data to output file.
+		i++
+		if i >= MaxBuf {
+			j++
+			fmt.Println("	begin to deal file, count:", j)
+			timestamp = writeJsonToFile(outFileName, timestamp, logs)
+			logs = make([]Log, 0, MaxBuf)
+			i = 0
+		}
+	}
+	return writeJsonToFile(outFileName, timestamp, logs), count
+}
+
+/*
+download the http_logs files and extract them:
+
+	https://rally-tracks.elastic.co/http_logs/documents-181998.json.bz2
+	https://rally-tracks.elastic.co/http_logs/documents-191998.json.bz2
+	https://rally-tracks.elastic.co/http_logs/documents-201998.json.bz2
+	https://rally-tracks.elastic.co/http_logs/documents-211998.json.bz2
+	https://rally-tracks.elastic.co/http_logs/documents-221998.json.bz2
+	https://rally-tracks.elastic.co/http_logs/documents-231998.json.bz2
+	https://rally-tracks.elastic.co/http_logs/documents-241998.json.bz2
+*/
+
+func Transfer(outFath string) {
+	jsonFile := []string{
+		"documents-181998.json",
+		"documents-191998.json",
+		"documents-201998.json",
+		"documents-211998.json",
+		"documents-221998.json",
+		"documents-231998.json",
+		"documents-241998.json",
+	}
+
+	var timestamp int64 = 800000000
+	var cnt int = 0
+	var allCnt int = 0
+	for i := 0; i < len(jsonFile); i++ {
+		fmt.Println("begin to merge file:", jsonFile[i])
+		timestamp, cnt = readJsonAndTransfer(jsonFile[i], outFath, timestamp)
+		allCnt = allCnt + cnt
+		fmt.Println("sum of docs:", allCnt, "cur file docs:", cnt)
 	}
 }
