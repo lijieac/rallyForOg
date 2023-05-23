@@ -86,6 +86,6 @@ func main() {
 		sum = sum + (end - start)
 	}
 	oEnd := time.Now().UnixMicro()
-	fmt.Println("--All cost time:", float64(oEnd-oStart)/1000, "Write cost time: ", sum)
+	fmt.Println("--All cost time:", float64(oEnd-oStart)/1000, "Write cost time: ", sum/1000)
 
 }
