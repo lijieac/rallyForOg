@@ -58,7 +58,6 @@ func ReadDataFromFile(fileName string, maxCount int) ([]Log, error) {
 		data, _, err := buff.ReadLine()
 		if err != nil {
 			if err == io.EOF {
-				fmt.Println("read file EOF!")
 				break
 			}
 			log.Fatal(err)
@@ -99,7 +98,7 @@ func NewOpenGeminiClient(rawURL string) *client.Client {
 
 func CreateMeasurementForLogs(con *client.Client, noIndex bool) error {
 	q := client.Query{
-		Command: "drop database logdb; create database logdb",
+		Command: "drop database logdb; create database logdb with SHARD DURATION 40d",
 	}
 
 	r, err := con.Query(q)

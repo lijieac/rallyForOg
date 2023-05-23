@@ -35,6 +35,7 @@ type JsonInfo struct {
 	name    string
 	count   int
 	realCnt int
+	log     []logs.Log
 }
 
 func main() {
@@ -55,37 +56,53 @@ func main() {
 	httpTarget := "http://" + host
 	// all documents: 247249096
 	jsonFile := []JsonInfo{
-		{"documents-181998.json", 2800000, 2708746},     // 270 8746
-		{"documents-191998.json", 10000000, 9697882},    // 969 7882
-		{"documents-201998.json", 13100000, 13053463},   // 1305 3463
-		{"documents-211998.json", 17700000, 17647279},   // 1764 7279
-		{"documents-221998.json", 10800000, 10716760},   // 1071 6760
-		{"documents-231998.json", 12000000, 11961342},   // 1196 1342
-		{"documents-241998.json", 181500000, 181463624}, // 1 8146 3624
+		{"documents-181998.json", 2800000, 2708746, nil},     // 270 8746
+		{"documents-191998.json", 10000000, 9697882, nil},    // 969 7882
+		{"documents-201998.json", 13100000, 13053463, nil},   // 1305 3463
+		{"documents-211998.json", 17700000, 17647279, nil},   // 1764 7279
+		{"documents-221998.json", 10800000, 10716760, nil},   // 1071 6760
+		{"documents-231998.json", 12000000, 11961342, nil},   // 1196 1342
+		{"documents-241998.json", 181500000, 181463624, nil}, // 1 8146 3624
 	}
 
 	// new openGemini client and create the schema of measurement.
 	var sum int64 = 0
 	cons := logs.NewGeminiClientAndMeasurement(httpTarget, index == "noindex")
 
+	// get the data from file.
+	cnt := 0
 	oStart := time.Now().UnixMicro()
+	fmt.Println("---------------------------------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------------------------------")
 	for i := 0; i < len(jsonFile); i++ {
-		// get the data from file.
-		fmt.Println("--Start to read file [", jsonFile[i].name, "] and write to openGemini...")
 		filePath := "../../resource/http_logs/" + jsonFile[i].name
 		log, err := logs.ReadDataFromFile(filePath, jsonFile[i].count)
 		if err != nil {
 			break
 		}
-		fmt.Println("--read data from [", jsonFile[i].name, "]successfully, RealCount-ReadCount:", jsonFile[i].realCnt, len(log))
-
-		start := time.Now().UnixMicro()
-		cnt := logs.WriteLogsToOpenGemini(cons, log, threadCnt)
-		end := time.Now().UnixMicro()
-		fmt.Println("--File:", jsonFile[i].name, " Write count:", cnt, " Cost time: ", float64(end-start)/1000)
-		sum = sum + (end - start)
+		jsonFile[i].log = log
+		fmt.Println("--read data from [", jsonFile[i].name, "]successfully, RealCount-ReadCount:", jsonFile[i].realCnt, len(jsonFile[i].log))
+		cnt = cnt + len(jsonFile[i].log)
 	}
 	oEnd := time.Now().UnixMicro()
+	fmt.Println("---------------------------------------------------------------------------------")
+	fmt.Println("--Finish read data, Cost time:", float64(oEnd-oStart)/1000, " Docment count:", cnt)
+
+	// write data to openGemini
+	fmt.Println("---------------------------------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------------------------------")
+	oStart = time.Now().UnixMicro()
+	for i := 0; i < len(jsonFile); i++ {
+		start := time.Now().UnixMicro()
+		cnt := logs.WriteLogsToOpenGemini(cons, jsonFile[i].log, threadCnt)
+		end := time.Now().UnixMicro()
+		fmt.Println("--Finish write file: [", jsonFile[i].name, "], Cost time: ", float64(end-start)/1000, "Write count:", cnt)
+		sum = sum + (end - start)
+	}
+	oEnd = time.Now().UnixMicro()
+	fmt.Println("---------------------------------------------------------------------------------")
 	fmt.Println("--All cost time:", float64(oEnd-oStart)/1000, "Write cost time: ", sum/1000)
+	fmt.Println("---------------------------------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------------------------------")
 
 }
