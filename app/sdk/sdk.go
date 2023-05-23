@@ -49,5 +49,14 @@ func main() {
 		return
 	}
 
-	logs.WriteLogsToOpenGemini(filePath, "http://127.0.0.1:8086", count, index == "noindex")
+	// new openGemini client and create the schema of measurement.
+	cons := logs.NewGeminiClientAndMeasurement("http://127.0.0.1:8086", index == "noindex")
+
+	// get the data from file.
+	fmt.Println("Begin to write logs to openGemini...")
+	log := logs.ReadDataFromFile(filePath, count)
+	fmt.Println("read data successfully, count:", len(log))
+
+	// write to openGemini.
+	logs.WriteLogsToOpenGemini(cons, log, 1)
 }

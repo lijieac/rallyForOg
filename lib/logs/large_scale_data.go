@@ -22,13 +22,14 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"sync"
 	"time"
 
 	client "github.com/influxdata/influxdb1-client"
 )
 
 const (
-	printCount  int = 1000000
+	printCount  int = 10000000
 	batchPoints int = 100
 	maxRetry    int = 5
 )
@@ -41,7 +42,7 @@ type Log struct {
 	Size      int    `json:"size"`
 }
 
-func readDataFromFile(fileName string, maxCount int) []Log {
+func ReadDataFromFile(fileName string, maxCount int) []Log {
 	fp, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -95,7 +96,7 @@ func NewOpenGeminiClient(rawURL string) *client.Client {
 	return con
 }
 
-func createMeasurementForLogs(con *client.Client, noIndex bool) error {
+func CreateMeasurementForLogs(con *client.Client, noIndex bool) error {
 	q := client.Query{
 		Command: "drop database logdb; create database logdb",
 	}
@@ -138,19 +139,45 @@ func createMeasurementForLogs(con *client.Client, noIndex bool) error {
 	return nil
 }
 
-func WriteLogsToOpenGemini(file, rawURL string, count int, noIndex bool) {
-	fmt.Println("Begin to write logs to openGemini...")
-	logs := readDataFromFile(file, count)
-	fmt.Println("read data successfully, count:", len(logs))
+func NewGeminiClientAndMeasurement(rawURL string, noIndex bool) *client.Client {
 	con := NewOpenGeminiClient(rawURL)
-	err := createMeasurementForLogs(con, noIndex)
+	err := CreateMeasurementForLogs(con, noIndex)
 	if err != nil {
 		log.Fatal(err)
 	}
+	return con
+}
 
+type WriteLogs struct {
+	con      *client.Client
+	log      []Log
+	curIndex int
+	lock     sync.RWMutex
+}
+
+func NewWriteLogs(con *client.Client, log []Log) *WriteLogs {
+	return &WriteLogs{
+		con:      con,
+		log:      log,
+		curIndex: 0,
+	}
+}
+
+func (wlogs *WriteLogs) GetCurIndexAndAdd() int {
+	wlogs.lock.Lock()
+	index := wlogs.curIndex
+	wlogs.curIndex = wlogs.curIndex + batchPoints
+	wlogs.lock.Unlock()
+	return index
+}
+
+func writeToOpenGemini(writeLogs *WriteLogs, threadId int) {
 	start := time.Now().UnixMicro()
-	pre := time.Now().UnixMicro()
-	i := 0
+
+	cnt := 0
+	logs := writeLogs.log
+	con := writeLogs.con
+	i := writeLogs.GetCurIndexAndAdd()
 	for i < len(logs) {
 		points := make([]client.Point, 0, batchPoints)
 		curMax := i + batchPoints
@@ -172,18 +199,12 @@ func WriteLogsToOpenGemini(file, rawURL string, count int, noIndex bool) {
 				Precision: "ns",
 			}
 			points = append(points, point)
-
 			if (i != 0) && (i%printCount) == 0 {
 				cur := time.Now().UnixMicro()
-				ti := int((cur - pre) / 1000000)
-				if ti != 0 {
-					fmt.Println("current time:", cur, "count:", i, "timeInverval:", ti, "write(points/s):", printCount/ti)
-				} else {
-					fmt.Println("current time:", cur, "count:", i)
-				}
-				pre = cur
+				fmt.Println("ID:", threadId, "- current time:", cur, "count:", i)
 			}
 			i++
+			cnt++
 		}
 
 		bps := client.BatchPoints{
@@ -200,5 +221,17 @@ func WriteLogsToOpenGemini(file, rawURL string, count int, noIndex bool) {
 	}
 
 	end := time.Now().UnixMicro()
-	fmt.Println("sdk push", i, "logs cost time: ", float64(end-start)/1000)
+	fmt.Println("ID:", threadId, " Write count:", cnt, " Cost time: ", float64(end-start)/1000)
+}
+
+func WriteLogsToOpenGemini(con *client.Client, logs []Log, threadCnt int) {
+	writeLogs := NewWriteLogs(con, logs)
+	var wg sync.WaitGroup
+	for i := 0; i < threadCnt; i++ {
+		go func(id int) {
+			writeToOpenGemini(writeLogs, id)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
 }
