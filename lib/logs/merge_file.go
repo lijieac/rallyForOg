@@ -198,7 +198,7 @@ func Transfer(outFath string) {
 		"documents-241998.json",
 	}
 
-	var timestamp int64 = 800000000
+	var timestamp int64 = 8000000000
 	var cnt int = 0
 	var allCnt int = 0
 	for i := 0; i < len(jsonFile); i++ {

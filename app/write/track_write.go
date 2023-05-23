@@ -71,18 +71,21 @@ func main() {
 	oStart := time.Now().UnixMicro()
 	for i := 0; i < len(jsonFile); i++ {
 		// get the data from file.
-		fmt.Println("Start to read file [", jsonFile[i].name, "] and write to openGemini...")
+		fmt.Println("--Start to read file [", jsonFile[i].name, "] and write to openGemini...")
 		filePath := "../../resource/http_logs/" + jsonFile[i].name
-		log := logs.ReadDataFromFile(filePath, jsonFile[i].count)
-		fmt.Println("read data from [", jsonFile[i].name, "]successfully, count:", len(log))
+		log, err := logs.ReadDataFromFile(filePath, jsonFile[i].count)
+		if err != nil {
+			break
+		}
+		fmt.Println("--read data from [", jsonFile[i].name, "]successfully, RealCount-ReadCount:", jsonFile[i].realCnt, len(log))
 
 		start := time.Now().UnixMicro()
-		logs.WriteLogsToOpenGemini(cons, log, threadCnt)
+		cnt := logs.WriteLogsToOpenGemini(cons, log, threadCnt)
 		end := time.Now().UnixMicro()
-		fmt.Println("File:", jsonFile[i].name, " Write count:", jsonFile[i].realCnt, " Cost time: ", float64(end-start)/1000)
+		fmt.Println("--File:", jsonFile[i].name, " Write count:", cnt, " Cost time: ", float64(end-start)/1000)
 		sum = sum + (end - start)
 	}
 	oEnd := time.Now().UnixMicro()
-	fmt.Println("All cost time:", float64(oEnd-oStart)/1000, "Write cost time: ", sum)
+	fmt.Println("--All cost time:", float64(oEnd-oStart)/1000, "Write cost time: ", sum)
 
 }

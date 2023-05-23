@@ -42,10 +42,11 @@ type Log struct {
 	Size      int    `json:"size"`
 }
 
-func ReadDataFromFile(fileName string, maxCount int) []Log {
+func ReadDataFromFile(fileName string, maxCount int) ([]Log, error) {
 	fp, err := os.Open(fileName)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Open file err:", fileName, err)
+		return nil, err
 	}
 	defer fp.Close()
 
@@ -79,7 +80,7 @@ func ReadDataFromFile(fileName string, maxCount int) []Log {
 			break
 		}
 	}
-	return logs
+	return logs, nil
 }
 
 // openGemini use influxdb sdk
@@ -152,6 +153,7 @@ type WriteLogs struct {
 	con      *client.Client
 	log      []Log
 	curIndex int
+	writeCnt int
 	lock     sync.RWMutex
 }
 
@@ -169,6 +171,12 @@ func (wlogs *WriteLogs) GetCurIndexAndAdd() int {
 	wlogs.curIndex = wlogs.curIndex + batchPoints
 	wlogs.lock.Unlock()
 	return index
+}
+
+func (wlogs *WriteLogs) AddWriteCnt(cnt int) {
+	wlogs.lock.Lock()
+	wlogs.writeCnt = wlogs.writeCnt + cnt
+	wlogs.lock.Unlock()
 }
 
 func writeToOpenGemini(writeLogs *WriteLogs, threadId int) {
@@ -222,9 +230,10 @@ func writeToOpenGemini(writeLogs *WriteLogs, threadId int) {
 
 	end := time.Now().UnixMicro()
 	fmt.Println("ID:", threadId, " Write count:", cnt, " Cost time: ", float64(end-start)/1000)
+	writeLogs.AddWriteCnt(cnt)
 }
 
-func WriteLogsToOpenGemini(con *client.Client, logs []Log, threadCnt int) {
+func WriteLogsToOpenGemini(con *client.Client, logs []Log, threadCnt int) int {
 	writeLogs := NewWriteLogs(con, logs)
 	var wg sync.WaitGroup
 	for i := 0; i < threadCnt; i++ {
@@ -234,4 +243,5 @@ func WriteLogsToOpenGemini(con *client.Client, logs []Log, threadCnt int) {
 		}(i)
 	}
 	wg.Wait()
+	return writeLogs.writeCnt
 }

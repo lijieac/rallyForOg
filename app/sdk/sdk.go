@@ -54,8 +54,11 @@ func main() {
 
 	// get the data from file.
 	fmt.Println("Begin to write logs to openGemini...")
-	log := logs.ReadDataFromFile(filePath, count)
+	log, err := logs.ReadDataFromFile(filePath, count)
 	fmt.Println("read data successfully, count:", len(log))
+	if err != nil {
+		return
+	}
 
 	// write to openGemini.
 	logs.WriteLogsToOpenGemini(cons, log, 1)
