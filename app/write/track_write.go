@@ -17,9 +17,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
+	client "github.com/influxdata/influxdb1-client"
 	"github.com/lijieac/rallyForOg/lib/logs"
 )
 
@@ -65,9 +67,19 @@ func main() {
 		{"documents-241998.json", 181500000, 181463624, nil}, // 1 8146 3624
 	}
 
-	// new openGemini client and create the schema of measurement.
-	var sum int64 = 0
-	cons := logs.NewGeminiClientAndMeasurement(httpTarget, index == "noindex")
+	// new openGemini client, every thread has client connection
+	fmt.Println("---------------------------------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------------------------------")
+	cons := make([]*client.Client, threadCnt)
+	for i := 0; i < threadCnt; i++ {
+		cons[i] = logs.NewOpenGeminiClient(httpTarget)
+	}
+	// create the schema of measurement.
+	err := logs.CreateMeasurementForLogs(cons[0], index == "noindex")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("--Open openGmeini client and create database success.")
 
 	// get the data from file.
 	cnt := 0
@@ -91,6 +103,7 @@ func main() {
 	// write data to openGemini
 	fmt.Println("---------------------------------------------------------------------------------")
 	fmt.Println("---------------------------------------------------------------------------------")
+	var sum int64 = 0
 	oStart = time.Now().UnixMicro()
 	for i := 0; i < len(jsonFile); i++ {
 		start := time.Now().UnixMicro()

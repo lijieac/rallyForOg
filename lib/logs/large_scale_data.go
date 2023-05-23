@@ -149,18 +149,17 @@ func NewGeminiClientAndMeasurement(rawURL string, noIndex bool) *client.Client {
 }
 
 type WriteLogs struct {
-	con      *client.Client
 	log      []Log
 	curIndex int
 	writeCnt int
 	lock     sync.RWMutex
 }
 
-func NewWriteLogs(con *client.Client, log []Log) *WriteLogs {
+func NewWriteLogs(log []Log) *WriteLogs {
 	return &WriteLogs{
-		con:      con,
 		log:      log,
 		curIndex: 0,
+		writeCnt: 0,
 	}
 }
 
@@ -178,12 +177,11 @@ func (wlogs *WriteLogs) AddWriteCnt(cnt int) {
 	wlogs.lock.Unlock()
 }
 
-func writeToOpenGemini(writeLogs *WriteLogs, threadId int) {
+func writeToOpenGemini(con *client.Client, writeLogs *WriteLogs, threadId int) {
 	start := time.Now().UnixMicro()
 
 	cnt := 0
 	logs := writeLogs.log
-	con := writeLogs.con
 	i := writeLogs.GetCurIndexAndAdd()
 	for i < len(logs) {
 		points := make([]client.Point, 0, batchPoints)
@@ -233,13 +231,19 @@ func writeToOpenGemini(writeLogs *WriteLogs, threadId int) {
 	writeLogs.AddWriteCnt(cnt)
 }
 
-func WriteLogsToOpenGemini(con *client.Client, logs []Log, threadCnt int) int {
-	writeLogs := NewWriteLogs(con, logs)
+func WriteLogsToOpenGemini(cons []*client.Client, logs []Log, threadCnt int) int {
+	writeLogs := NewWriteLogs(logs)
 	var wg sync.WaitGroup
+
+	if len(cons) < threadCnt {
+		fmt.Println("wrong parameter.")
+		return 0
+	}
+
 	for i := 0; i < threadCnt; i++ {
 		wg.Add(1)
 		go func(id int) {
-			writeToOpenGemini(writeLogs, id)
+			writeToOpenGemini(cons[id], writeLogs, id)
 			wg.Done()
 		}(i)
 	}

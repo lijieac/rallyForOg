@@ -20,6 +20,7 @@ import (
 	"os"
 	"strconv"
 
+	client "github.com/influxdata/influxdb1-client"
 	"github.com/lijieac/rallyForOg/lib/logs"
 )
 
@@ -50,7 +51,8 @@ func main() {
 	}
 
 	// new openGemini client and create the schema of measurement.
-	cons := logs.NewGeminiClientAndMeasurement("http://127.0.0.1:8086", index == "noindex")
+	cons := make([]*client.Client, 1)
+	cons[0] = logs.NewGeminiClientAndMeasurement("http://127.0.0.1:8086", index == "noindex")
 
 	// get the data from file.
 	fmt.Println("Begin to write logs to openGemini...")
