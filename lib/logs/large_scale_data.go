@@ -226,6 +226,7 @@ func writeToOpenGemini(writeLogs *WriteLogs, threadId int) {
 			}
 			fmt.Println("current time:", time.Now(), "panic error, (i, retry):", i, retry, " error: ", err)
 		}
+		i = writeLogs.GetCurIndexAndAdd()
 	}
 
 	end := time.Now().UnixMicro()
@@ -237,6 +238,7 @@ func WriteLogsToOpenGemini(con *client.Client, logs []Log, threadCnt int) int {
 	writeLogs := NewWriteLogs(con, logs)
 	var wg sync.WaitGroup
 	for i := 0; i < threadCnt; i++ {
+		wg.Add(1)
 		go func(id int) {
 			writeToOpenGemini(writeLogs, id)
 			wg.Done()
