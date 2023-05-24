@@ -232,6 +232,11 @@ func writeToOpenGemini(con *client.Client, writeLogs *WriteLogs, threadId int) {
 }
 
 func WriteLogsToOpenGemini(cons []*client.Client, logs []Log, threadCnt int) int {
+	if cons == nil || logs == nil || threadCnt <= 0 {
+		fmt.Println("wrong parameter.")
+		return 0
+	}
+
 	writeLogs := NewWriteLogs(logs)
 	var wg sync.WaitGroup
 

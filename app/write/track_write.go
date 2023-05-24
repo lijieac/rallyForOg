@@ -90,7 +90,8 @@ func main() {
 		filePath := "../../resource/http_logs/" + jsonFile[i].name
 		log, err := logs.ReadDataFromFile(filePath, jsonFile[i].count)
 		if err != nil {
-			break
+			fmt.Println("--read data from [", jsonFile[i].name, "]failed")
+			continue
 		}
 		jsonFile[i].log = log
 		fmt.Println("--read data from [", jsonFile[i].name, "]successfully, RealCount-ReadCount:", jsonFile[i].realCnt, len(jsonFile[i].log))
@@ -117,5 +118,4 @@ func main() {
 	fmt.Println("--All cost time:", float64(oEnd-oStart)/1000, "Write cost time: ", sum/1000)
 	fmt.Println("---------------------------------------------------------------------------------")
 	fmt.Println("---------------------------------------------------------------------------------")
-
 }
