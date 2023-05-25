@@ -96,6 +96,7 @@ func main() {
 			log, err := logs.ReadDataFromFile(filePath, jsonFile[idx].count)
 			if err != nil {
 				fmt.Println("--read data from [", jsonFile[idx].name, "]failed")
+				wg.Done()
 				return
 			}
 			jsonFile[idx].log = log
