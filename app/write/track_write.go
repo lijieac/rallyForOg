@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"sync"
 	"time"
 
 	client "github.com/influxdata/influxdb1-client"
@@ -86,15 +87,24 @@ func main() {
 	oStart := time.Now().UnixMicro()
 	fmt.Println("---------------------------------------------------------------------------------")
 	fmt.Println("---------------------------------------------------------------------------------")
+
+	var wg sync.WaitGroup
 	for i := 0; i < len(jsonFile); i++ {
-		filePath := "../../resource/http_logs/" + jsonFile[i].name
-		log, err := logs.ReadDataFromFile(filePath, jsonFile[i].count)
-		if err != nil {
-			fmt.Println("--read data from [", jsonFile[i].name, "]failed")
-			continue
-		}
-		jsonFile[i].log = log
-		fmt.Println("--read data from [", jsonFile[i].name, "]successfully, RealCount-ReadCount:", jsonFile[i].realCnt, len(jsonFile[i].log))
+		wg.Add(1)
+		go func(idx int) {
+			filePath := "../../resource/http_logs/" + jsonFile[idx].name
+			log, err := logs.ReadDataFromFile(filePath, jsonFile[idx].count)
+			if err != nil {
+				fmt.Println("--read data from [", jsonFile[idx].name, "]failed")
+				return
+			}
+			jsonFile[idx].log = log
+			fmt.Println("--read data from [", jsonFile[idx].name, "]successfully, RealCount-ReadCount:", jsonFile[idx].realCnt, len(jsonFile[idx].log))
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	for i := 0; i < len(jsonFile); i++ {
 		cnt = cnt + len(jsonFile[i].log)
 	}
 	oEnd := time.Now().UnixMicro()
