@@ -63,5 +63,5 @@ func main() {
 	}
 
 	// write to openGemini.
-	logs.WriteLogsToOpenGemini(cons, log, 1)
+	logs.WriteLogsToOpenGemini(cons, "logdb", "logTable", log, 1)
 }

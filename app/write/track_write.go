@@ -35,10 +35,23 @@ func usage() {
 }
 
 type JsonInfo struct {
-	name    string
-	count   int
-	realCnt int
-	log     []logs.Log
+	fileName string
+	dbName   string
+	mstName  string
+	count    int
+	realCnt  int
+	log      []logs.Log
+}
+
+// all documents: 247249096
+var jsonFile []JsonInfo = []JsonInfo{
+	{"documents-181998.json", "db181998", "documents181998", 2800000, 2708746, nil},     // 270 8746
+	{"documents-191998.json", "db191998", "documents191998", 10000000, 9697882, nil},    // 969 7882
+	{"documents-201998.json", "db201998", "documents201998", 13100000, 13053463, nil},   // 1305 3463
+	{"documents-211998.json", "db211998", "documents211998", 17700000, 17647279, nil},   // 1764 7279
+	{"documents-221998.json", "db221998", "documents221998", 10800000, 10716760, nil},   // 1071 6760
+	{"documents-231998.json", "db231998", "documents231998", 12000000, 11961342, nil},   // 1196 1342
+	{"documents-241998.json", "db241998", "documents241998", 181500000, 181463624, nil}, // 1 8146 3624
 }
 
 func main() {
@@ -55,18 +68,7 @@ func main() {
 		usage()
 		return
 	}
-
 	httpTarget := "http://" + host
-	// all documents: 247249096
-	jsonFile := []JsonInfo{
-		{"documents-181998.json", 2800000, 2708746, nil},     // 270 8746
-		{"documents-191998.json", 10000000, 9697882, nil},    // 969 7882
-		{"documents-201998.json", 13100000, 13053463, nil},   // 1305 3463
-		{"documents-211998.json", 17700000, 17647279, nil},   // 1764 7279
-		{"documents-221998.json", 10800000, 10716760, nil},   // 1071 6760
-		{"documents-231998.json", 12000000, 11961342, nil},   // 1196 1342
-		{"documents-241998.json", 181500000, 181463624, nil}, // 1 8146 3624
-	}
 
 	// new openGemini client, every thread has client connection
 	fmt.Println("---------------------------------------------------------------------------------")
@@ -76,9 +78,11 @@ func main() {
 		cons[i] = logs.NewOpenGeminiClient(httpTarget)
 	}
 	// create the schema of measurement.
-	err := logs.CreateMeasurementForLogs(cons[0], index == "noindex")
-	if err != nil {
-		log.Fatal(err)
+	for i := 0; i < len(jsonFile); i++ {
+		err := logs.CreateMeasurementForLogs(cons[0], jsonFile[i].dbName, jsonFile[i].mstName, index == "noindex")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	fmt.Println("--Open openGmeini client and create database success.")
 
@@ -92,15 +96,15 @@ func main() {
 	for i := 0; i < len(jsonFile); i++ {
 		wg.Add(1)
 		go func(idx int) {
-			filePath := "../../resource/http_logs/" + jsonFile[idx].name
+			filePath := "../../resource/http_logs/" + jsonFile[idx].fileName
 			log, err := logs.ReadDataFromFile(filePath, jsonFile[idx].count)
 			if err != nil {
-				fmt.Println("--read data from [", jsonFile[idx].name, "]failed")
+				fmt.Println("--read data from [", jsonFile[idx].fileName, "]failed")
 				wg.Done()
 				return
 			}
 			jsonFile[idx].log = log
-			fmt.Println("--read data from [", jsonFile[idx].name, "]successfully, RealCount-ReadCount:", jsonFile[idx].realCnt, len(jsonFile[idx].log))
+			fmt.Println("--read data from [", jsonFile[idx].fileName, "]successfully, RealCount-ReadCount:", jsonFile[idx].realCnt, len(jsonFile[idx].log))
 			wg.Done()
 		}(i)
 	}
@@ -119,9 +123,9 @@ func main() {
 	oStart = time.Now().UnixMicro()
 	for i := 0; i < len(jsonFile); i++ {
 		start := time.Now().UnixMicro()
-		cnt := logs.WriteLogsToOpenGemini(cons, jsonFile[i].log, threadCnt)
+		cnt := logs.WriteLogsToOpenGemini(cons, jsonFile[i].dbName, jsonFile[i].mstName, jsonFile[i].log, threadCnt)
 		end := time.Now().UnixMicro()
-		fmt.Println("--Finish write file: [", jsonFile[i].name, "], Cost time: ", float64(end-start)/1000, "Write count:", cnt)
+		fmt.Println("--Finish write file: [", jsonFile[i].fileName, "], Cost time: ", float64(end-start)/1000, "Write count:", cnt)
 		sum = sum + (end - start)
 	}
 	oEnd = time.Now().UnixMicro()

@@ -66,7 +66,6 @@ func ReadDataFromFile(fileName string, maxCount int) ([]Log, error) {
 		var log Log
 		err = json.Unmarshal(data, &log)
 		if err != nil {
-			fmt.Println("Unmarshal failed.", i, log)
 			continue
 		}
 		logs = append(logs, log)
@@ -96,44 +95,52 @@ func NewOpenGeminiClient(rawURL string) *client.Client {
 	return con
 }
 
-func CreateMeasurementForLogs(con *client.Client, noIndex bool) error {
+func CreateMeasurementForLogs(con *client.Client, dbName string, mstName string, noIndex bool) error {
+	// "drop database logdb; create database logdb with SHARD DURATION 40d"
+	cmd := "drop database " + dbName + ";" + "create database " + dbName
 	q := client.Query{
-		Command: "drop database logdb; create database logdb with SHARD DURATION 40d",
+		Command: cmd,
 	}
 
 	r, err := con.Query(q)
 	if err != nil {
-		fmt.Println("create database error:", err)
+		fmt.Println(cmd)
+		fmt.Println("create database", dbName, "error:", err)
 		return err
 	}
+
 	if r.Err != nil {
-		fmt.Println("create database error:", r.Err)
+		fmt.Println(cmd)
+		fmt.Println("create database", dbName, "error:", r.Err)
 		return r.Err
 	}
 
 	if noIndex {
+		cmd := "create measurement " + mstName
 		q = client.Query{
-			Command:  "create measurement logTable",
-			Database: "logdb",
+			Command:  cmd,
+			Database: dbName,
 		}
 	} else {
+		// create measurement logTable(clientip string tag, request string field, index idx1 request type text)
+		cmd := "create measurement " + mstName + "(clientip string tag, request string field, index idx1 request type text)"
 		q = client.Query{
-			Command:  "create measurement logTable(clientip string tag, request string field, index idx1 request type text)",
-			Database: "logdb",
+			Command:  cmd,
+			Database: dbName,
 		}
 	}
 
 	r, err = con.Query(q)
 	if err != nil {
-		fmt.Println("create measurment(logdb.logTable) error:", err)
+		fmt.Println("create measurment:", dbName, mstName, "error:", err)
 		return err
 	}
 
 	if r.Err != nil {
-		fmt.Println("create measurment(logdb.logTable) error:", r.Err)
+		fmt.Println("create measurment:", dbName, mstName, "r.Err:", r.Err)
 		return r.Err
 	} else {
-		fmt.Println("create measurment(logdb.logTable) successfully.")
+		fmt.Println("create measurment:", dbName, mstName, "successfully!")
 	}
 
 	return nil
@@ -141,7 +148,7 @@ func CreateMeasurementForLogs(con *client.Client, noIndex bool) error {
 
 func NewGeminiClientAndMeasurement(rawURL string, noIndex bool) *client.Client {
 	con := NewOpenGeminiClient(rawURL)
-	err := CreateMeasurementForLogs(con, noIndex)
+	err := CreateMeasurementForLogs(con, "logdb", "logTable", noIndex)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -177,7 +184,7 @@ func (wlogs *WriteLogs) AddWriteCnt(cnt int) {
 	wlogs.lock.Unlock()
 }
 
-func writeToOpenGemini(con *client.Client, writeLogs *WriteLogs, threadId int) {
+func writeToOpenGemini(con *client.Client, dbName string, mstName string, writeLogs *WriteLogs, threadId int) {
 	start := time.Now().UnixMicro()
 
 	cnt := 0
@@ -191,7 +198,7 @@ func writeToOpenGemini(con *client.Client, writeLogs *WriteLogs, threadId int) {
 		}
 		for i < curMax {
 			point := client.Point{
-				Measurement: "logTable",
+				Measurement: mstName,
 				Tags: map[string]string{
 					"clientip": logs[i].Clientip,
 				},
@@ -214,7 +221,7 @@ func writeToOpenGemini(con *client.Client, writeLogs *WriteLogs, threadId int) {
 
 		bps := client.BatchPoints{
 			Points:   points,
-			Database: "logdb",
+			Database: dbName,
 		}
 		for retry := 0; retry < maxRetry; retry++ {
 			_, err := con.Write(bps)
@@ -231,7 +238,7 @@ func writeToOpenGemini(con *client.Client, writeLogs *WriteLogs, threadId int) {
 	writeLogs.AddWriteCnt(cnt)
 }
 
-func WriteLogsToOpenGemini(cons []*client.Client, logs []Log, threadCnt int) int {
+func WriteLogsToOpenGemini(cons []*client.Client, dbName string, mstName string, logs []Log, threadCnt int) int {
 	if cons == nil || logs == nil || threadCnt <= 0 {
 		fmt.Println("wrong parameter.")
 		return 0
@@ -248,7 +255,7 @@ func WriteLogsToOpenGemini(cons []*client.Client, logs []Log, threadCnt int) int
 	for i := 0; i < threadCnt; i++ {
 		wg.Add(1)
 		go func(id int) {
-			writeToOpenGemini(cons[id], writeLogs, id)
+			writeToOpenGemini(cons[id], dbName, mstName, writeLogs, id)
 			wg.Done()
 		}(i)
 	}

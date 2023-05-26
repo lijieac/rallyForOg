@@ -75,9 +75,12 @@ func main() {
 	for i := 0; i < len(mtoken); i++ {
 		s := time.Now().UnixMicro()
 		q := client.NewQuery(mtoken[i], "logdb", "")
-		if response, err := c.Query(q); err == nil && response.Error() == nil {
+		// Query
+		response, err := c.Query(q)
+		if err == nil && response.Error() == nil {
 			e := time.Now().UnixMicro()
 			if len(response.Results) == 0 {
+				fmt.Println("Q", i, "E2E time:", float64(e-s)/1000, "result: 0")
 				continue
 			}
 			if len(response.Results[0].Series) == 0 {
