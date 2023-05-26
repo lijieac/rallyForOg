@@ -95,7 +95,7 @@ func NewOpenGeminiClient(rawURL string) *client.Client {
 	return con
 }
 
-func CreateMeasurementForLogs(con *client.Client, dbName string, mstName string, noIndex bool) error {
+func CreateDatabasesForLogs(con *client.Client, dbName string) error {
 	// "drop database logdb; create database logdb with SHARD DURATION 40d"
 	cmd := "drop database " + dbName + ";" + "create database " + dbName
 	q := client.Query{
@@ -114,23 +114,25 @@ func CreateMeasurementForLogs(con *client.Client, dbName string, mstName string,
 		fmt.Println("create database", dbName, "error:", r.Err)
 		return r.Err
 	}
+	fmt.Println("create database", dbName, "successfully!")
+	return nil
+}
 
+func CreateMeasurementForLogs(con *client.Client, dbName string, mstName string, noIndex bool) error {
+	// database need to existed.
+	var cmd string
 	if noIndex {
-		cmd := "create measurement " + mstName
-		q = client.Query{
-			Command:  cmd,
-			Database: dbName,
-		}
+		cmd = "create measurement " + mstName
 	} else {
 		// create measurement logTable(clientip string tag, request string field, index idx1 request type text)
-		cmd := "create measurement " + mstName + "(clientip string tag, request string field, index idx1 request type text)"
-		q = client.Query{
-			Command:  cmd,
-			Database: dbName,
-		}
+		cmd = "create measurement " + mstName + "(clientip string tag, request string field, index idx1 request type text)"
+	}
+	q := client.Query{
+		Command:  cmd,
+		Database: dbName,
 	}
 
-	r, err = con.Query(q)
+	r, err := con.Query(q)
 	if err != nil {
 		fmt.Println("create measurment:", dbName, mstName, "error:", err)
 		return err
@@ -139,16 +141,19 @@ func CreateMeasurementForLogs(con *client.Client, dbName string, mstName string,
 	if r.Err != nil {
 		fmt.Println("create measurment:", dbName, mstName, "r.Err:", r.Err)
 		return r.Err
-	} else {
-		fmt.Println("create measurment:", dbName, mstName, "successfully!")
 	}
+	fmt.Println("create measurment", mstName, "on ", dbName, "successfully!")
 
 	return nil
 }
 
 func NewGeminiClientAndMeasurement(rawURL string, noIndex bool) *client.Client {
 	con := NewOpenGeminiClient(rawURL)
-	err := CreateMeasurementForLogs(con, "logdb", "logTable", noIndex)
+	err := CreateDatabasesForLogs(con, "logdb")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = CreateMeasurementForLogs(con, "logdb", "logTable", noIndex)
 	if err != nil {
 		log.Fatal(err)
 	}

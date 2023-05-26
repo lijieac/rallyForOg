@@ -45,13 +45,13 @@ type JsonInfo struct {
 
 // all documents: 247249096
 var jsonFile []JsonInfo = []JsonInfo{
-	{"documents-181998.json", "db181998", "documents181998", 2800000, 2708746, nil},     // 270 8746
-	{"documents-191998.json", "db191998", "documents191998", 10000000, 9697882, nil},    // 969 7882
-	{"documents-201998.json", "db201998", "documents201998", 13100000, 13053463, nil},   // 1305 3463
-	{"documents-211998.json", "db211998", "documents211998", 17700000, 17647279, nil},   // 1764 7279
-	{"documents-221998.json", "db221998", "documents221998", 10800000, 10716760, nil},   // 1071 6760
-	{"documents-231998.json", "db231998", "documents231998", 12000000, 11961342, nil},   // 1196 1342
-	{"documents-241998.json", "db241998", "documents241998", 181500000, 181463624, nil}, // 1 8146 3624
+	{"documents-181998.json", "logdb", "mst181998", 2800000, 2708746, nil},     // 270 8746
+	{"documents-191998.json", "logdb", "mst191998", 10000000, 9697882, nil},    // 969 7882
+	{"documents-201998.json", "logdb", "mst201998", 13100000, 13053463, nil},   // 1305 3463
+	{"documents-211998.json", "logdb", "mst211998", 17700000, 17647279, nil},   // 1764 7279
+	{"documents-221998.json", "logdb", "mst221998", 10800000, 10716760, nil},   // 1071 6760
+	{"documents-231998.json", "logdb", "mst231998", 12000000, 11961342, nil},   // 1196 1342
+	{"documents-241998.json", "logdb", "mst241998", 181500000, 181463624, nil}, // 1 8146 3624
 }
 
 func main() {
@@ -77,7 +77,11 @@ func main() {
 	for i := 0; i < threadCnt; i++ {
 		cons[i] = logs.NewOpenGeminiClient(httpTarget)
 	}
-	// create the schema of measurement.
+	// create the database and measurement.
+	err := logs.CreateDatabasesForLogs(cons[0], jsonFile[0].dbName)
+	if err != nil {
+		log.Fatal(err)
+	}
 	for i := 0; i < len(jsonFile); i++ {
 		err := logs.CreateMeasurementForLogs(cons[0], jsonFile[i].dbName, jsonFile[i].mstName, index == "noindex")
 		if err != nil {
