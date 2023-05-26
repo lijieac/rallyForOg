@@ -15,15 +15,33 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	"fmt"
 	"time"
 
 	client "github.com/influxdata/influxdb1-client/v2"
 )
 
+func usage() {
+	fmt.Println("usage:")
+	fmt.Println(" -h host")
+	fmt.Println("    host: like \"127.0.0.1:8086\"")
+}
+
 func main() {
+	var host string
+	flag.StringVar(&host, "h", "nil", "Specify target host address.")
+	flag.Parse()
+
+	if host == "nil" {
+		usage()
+		return
+	}
+
+	// Open a new client
+	addr := "http://" + host
 	c, err := client.NewHTTPClient(client.HTTPConfig{
-		Addr:     "http://localhost:8086",
+		Addr:     addr,
 		Username: "admin",
 		Password: "At1314comi!",
 	})
@@ -32,41 +50,29 @@ func main() {
 	}
 	defer c.Close()
 
-	mtoken := make([]string, 30)
+	mtoken := make([]string, 18)
 	mtoken[0] = "select * from logTable where match_phrase(request, 'GET /images/photo02.gif')"
 	mtoken[1] = "select * from logTable where match_phrase(request, 'GET /english/playing/images/play_hm_mascot.gif')"
-	mtoken[2] = "select * from logTable where match_phrase(request, 'GET /images/11104.gif HTTP/1.1')"
-	mtoken[3] = "select * from logTable where match_phrase(request, 'GET /images/cal_steti.gif HTTP/1.0')"
-	mtoken[4] = "select * from logTable where match_phrase(request, 'GET /images/base.gif HTTP/1.0')"
-	mtoken[5] = "select * from logTable where match_phrase(request, 'GET /english/playing/images/anim/mascot_on.gif')"
-	mtoken[6] = "select * from logTable where match_phrase(request, 'GET /english/playing/download/images/box_saver1.gif')"
-	mtoken[7] = "select * from logTable where match_phrase(request, 'GET /french/images/hm_official.gif')"
-	mtoken[8] = "select * from logTable where match_phrase(request, 'past_cups/images/past_bu_30_off.gif')"
-	mtoken[9] = "select * from logTable where match_phrase(request, 'GET /french/venues/images/venue_bu_acomm_on.gif HTTP/1.0')"
+	mtoken[2] = "select * from logTable where match_phrase(request, 'GET /images/cal_steti.gif HTTP/1.0')"
+	mtoken[3] = "select * from logTable where match_phrase(request, 'GET /images/hm_bg.jpg HTTP/1.0')"
+	mtoken[4] = "select * from logTable where match_phrase(request, 'GET /images/s102325.gif HTTP/1.0')"
+	mtoken[5] = "select * from logTable where match_phrase(request, 'GET /english/frntpage.htm HTTP/1.0')"
 
-	mtoken[10] = "select * from logTable where match_phrase(request, 'GET /french/news/3004bres.htm')"
-	mtoken[11] = "select * from logTable where match_phrase(request, 'GET / HTTP/1.0')"
-	mtoken[12] = "select * from logTable where match_phrase(request, 'GET /english/history/past_cups/images/past_bracket_bot.gif')"
-	mtoken[13] = "select * from logTable where match_phrase(request, 'GET /french/tickets/images/ticket_bu_infrance2.gif')"
-	mtoken[14] = "select * from logTable where match_phrase(request, 'GET /french/tickets/images/ticket_bu_abroad2.gif')"
-	mtoken[15] = "select * from logTable where match_phrase(request, 'GET /images/hm_bg.jpg HTTP/1.0')"
-	mtoken[16] = "select * from logTable where match_phrase(request, 'GET /images/s102325.gif HTTP/1.0')"
-	mtoken[17] = "select * from logTable where match_phrase(request, 'GET /english/frntpage.htm HTTP/1.0')"
-	mtoken[18] = "select * from logTable where match_phrase(request, 'GET /english/history/history_of/images/cup')"
-	mtoken[19] = "select * from logTable where match_phrase(request, 'GET /english/images/team_hm_header_shad.gif HTTP/1.0')"
+	mtoken[6] = "select * from logTable where match(request, '11104.gif')"
+	mtoken[7] = "select * from logTable where match(request, '11104.gif')"
+	mtoken[8] = "select * from logTable where match(request, 'mascot_on.gif box_saver1.gif')"
+	mtoken[9] = "select * from logTable where match(request, 'team_hm_header_shad.gif')"
+	mtoken[10] = "select * from logTable where match(request, 'past_cups past_bu_30_off.gif')"
+	mtoken[11] = "select * from logTable where match(request, 'venues venue_bu_acomm_on.gif')"
 
-	mtoken[20] = "select * from logTable where match_phrase(request, 'GET /french/venues/body.html HTTP/1.0')"
-	mtoken[21] = "select * from logTable where match_phrase(request, 'GET /english/images/space.gif HTTP/1.1')"
-	mtoken[22] = "select * from logTable where match_phrase(request, 'GET /images/hm_linkf.gif HTTP/1.1')"
-	mtoken[23] = "select * from logTable where match_phrase(request, 'GET /images/11101.gif HTTP/1.0')"
-	mtoken[24] = "select * from logTable where match_phrase(request, '/english/playing/images/banner2.gif HTTP/1.0')"
-	mtoken[25] = "select * from logTable where match_phrase(request, 'GET /english/images/fpnewstop.gif HTTP/1.0')"
-	mtoken[26] = "select * from logTable where match_phrase(request, 'GET /images/bord_stories01.gif HTTP/1.0')"
-	mtoken[27] = "select * from logTable where match_phrase(request, 'GET /images/dburton.jpg HTTP/1.0')"
-	mtoken[28] = "select * from logTable where match_phrase(request, 'GET /images/base.gif HTTP/1.0')"
-	mtoken[29] = "select * from logTable where match_phrase(request, '/english/venues/cities/images/denis/venue_denn_bg.jpg')"
+	mtoken[12] = "select * from logTable where request like 'venues frntpage.%'"
+	mtoken[13] = "select * from logTable where request like 'venues photo02.%'"
+	mtoken[14] = "select * from logTable where request like 'venues trophytxt.gif'"
+	mtoken[15] = "select * from logTable where request like 'venues backg.gif'"
+	mtoken[16] = "select * from logTable where request like 'venues teamgroup.htm'"
+	mtoken[17] = "select * from logTable where request like 'venues competition'"
 
-	for i := 0; i < 30; i++ {
+	for i := 0; i < len(mtoken); i++ {
 		s := time.Now().UnixMicro()
 		q := client.NewQuery(mtoken[i], "logdb", "")
 		if response, err := c.Query(q); err == nil && response.Error() == nil {
@@ -77,10 +83,7 @@ func main() {
 			if len(response.Results[0].Series) == 0 {
 				continue
 			}
-			fmt.Println(len(response.Results[0].Series[0].Values))
-			//fmt.Println(response.Results)
-			fmt.Println("end to end time")
-			fmt.Println(float64(e-s) / 1000)
+			fmt.Println("Q", i, "E2E time:", float64(e-s)/1000, "result:", len(response.Results[0].Series[0].Values))
 		}
 	}
 }
